@@ -10,35 +10,29 @@ const SUBMITTER_NAME_KEY = "submitterName";
 export default function Home() {
   const [view, setView] = useState<"loading" | "form" | "results">("loading");
   const [prefillValues, setPrefillValues] = useState<PrefillValues | undefined>(undefined);
+  const [storedName, setStoredName] = useState<string | null>(null);
   const [isEditLoading, setIsEditLoading] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let hasSubmitted = false;
+    let name: string | null = null;
     try {
       hasSubmitted = localStorage.getItem(HAS_SUBMITTED_KEY) === "true";
+      name = localStorage.getItem(SUBMITTER_NAME_KEY);
     } catch {
       hasSubmitted = false;
+      name = null;
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable client-side after mount
     setView(hasSubmitted ? "results" : "form");
+    setStoredName(name);
   }, []);
 
-  async function handleEditRequested() {
-    setEditError(null);
-
-    let name: string | null = null;
-    try {
-      name = localStorage.getItem(SUBMITTER_NAME_KEY);
-    } catch {
-      name = null;
-    }
-
-    if (!name) {
-      setEditError("We couldn't find which response was yours. Try submitting again instead.");
-      return;
-    }
-
+  async function handleEditRequested(name: string) {
+    setActionError(null);
     setIsEditLoading(true);
     try {
       const res = await fetch(`/api/preference?name=${encodeURIComponent(name)}`, {
@@ -47,8 +41,8 @@ export default function Home() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.preference) {
-        setEditError(
-          data?.error || "Could not load your previous response. Please try again."
+        setActionError(
+          data?.error || "Could not load that response. Please check the name and try again."
         );
         return;
       }
@@ -64,14 +58,60 @@ export default function Home() {
       });
       setView("form");
     } catch {
-      setEditError("Could not reach the server. Check your connection and try again.");
+      setActionError("Could not reach the server. Check your connection and try again.");
     } finally {
       setIsEditLoading(false);
     }
   }
 
+  async function handleDeleteRequested(name: string) {
+    setActionError(null);
+    setIsDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/preference?name=${encodeURIComponent(name)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setActionError(
+          data?.error || "Could not delete that response. Please check the name and try again."
+        );
+        return;
+      }
+
+      const isSelf =
+        !!storedName && storedName.trim().toLowerCase() === name.trim().toLowerCase();
+
+      if (isSelf) {
+        try {
+          localStorage.removeItem(HAS_SUBMITTED_KEY);
+          localStorage.removeItem(SUBMITTER_NAME_KEY);
+        } catch {
+          // localStorage unavailable; not fatal
+        }
+        setStoredName(null);
+        setPrefillValues(undefined);
+        setView("form");
+      } else {
+        setRefreshToken((t) => t + 1);
+      }
+    } catch {
+      setActionError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setIsDeleteLoading(false);
+    }
+  }
+
   function handleSubmitted() {
     setPrefillValues(undefined);
+    let name: string | null = null;
+    try {
+      name = localStorage.getItem(SUBMITTER_NAME_KEY);
+    } catch {
+      name = null;
+    }
+    setStoredName(name);
     setView("results");
   }
 
@@ -83,9 +123,13 @@ export default function Home() {
       )}
       {view === "results" && (
         <ResultsView
+          storedName={storedName}
           onEditRequested={handleEditRequested}
+          onDeleteRequested={handleDeleteRequested}
           isEditLoading={isEditLoading}
-          editError={editError}
+          isDeleteLoading={isDeleteLoading}
+          actionError={actionError}
+          key={`results-${refreshToken}`}
         />
       )}
     </main>

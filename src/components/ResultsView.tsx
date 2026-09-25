@@ -17,16 +17,28 @@ const VERDICT_STYLES: Record<Verdict, string> = {
 };
 
 interface Props {
-  onEditRequested: () => void;
+  storedName: string | null;
+  onEditRequested: (name: string) => void;
+  onDeleteRequested: (name: string) => void;
   isEditLoading?: boolean;
-  editError?: string | null;
+  isDeleteLoading?: boolean;
+  actionError?: string | null;
 }
 
-export default function ResultsView({ onEditRequested, isEditLoading, editError }: Props) {
+export default function ResultsView({
+  storedName,
+  onEditRequested,
+  onDeleteRequested,
+  isEditLoading,
+  isDeleteLoading,
+  actionError,
+}: Props) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showQr, setShowQr] = useState(true);
   const [pageUrl, setPageUrl] = useState("");
+  const [pendingAction, setPendingAction] = useState<"edit" | "delete" | null>(null);
+  const [manualName, setManualName] = useState("");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- window.location is only available client-side
@@ -85,6 +97,39 @@ export default function ResultsView({ onEditRequested, isEditLoading, editError 
     load();
   }, [load]);
 
+  function handleEditClick() {
+    if (storedName) {
+      onEditRequested(storedName);
+    } else {
+      setPendingAction("edit");
+    }
+  }
+
+  function handleDeleteClick() {
+    if (storedName) {
+      if (window.confirm("Remove this response? You can resubmit later.")) {
+        onDeleteRequested(storedName);
+      }
+    } else {
+      setPendingAction("delete");
+    }
+  }
+
+  function handleManualNameContinue() {
+    const trimmed = manualName.trim();
+    if (!trimmed) return;
+
+    if (pendingAction === "edit") {
+      onEditRequested(trimmed);
+    } else if (pendingAction === "delete") {
+      if (window.confirm(`Remove the response for "${trimmed}"? You can resubmit later.`)) {
+        onDeleteRequested(trimmed);
+      }
+    }
+    setPendingAction(null);
+    setManualName("");
+  }
+
   const responseCount =
     state.kind === "waiting" || state.kind === "ready" ? state.responseCount : null;
 
@@ -107,19 +152,63 @@ export default function ResultsView({ onEditRequested, isEditLoading, editError 
           >
             {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
           </button>
-          <button
-            onClick={onEditRequested}
-            disabled={isEditLoading}
-            className="text-sm font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-black disabled:opacity-50"
-          >
-            {isEditLoading ? "Loading your response..." : "Edit my response"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleEditClick}
+              disabled={isEditLoading || isDeleteLoading}
+              className="text-sm font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-black disabled:opacity-50"
+            >
+              {isEditLoading ? "Loading..." : "Edit my response"}
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              disabled={isEditLoading || isDeleteLoading}
+              className="text-sm font-medium text-red-600 underline decoration-red-200 underline-offset-2 hover:text-red-800 disabled:opacity-50"
+            >
+              {isDeleteLoading ? "Removing..." : "Delete my response"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {editError && (
+      {pendingAction && (
+        <div className="flex flex-col gap-2 rounded-md border border-gray-200 px-4 py-3">
+          <label htmlFor="manual-name" className="text-sm font-medium">
+            Enter your name to find your response
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="manual-name"
+              type="text"
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              maxLength={50}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="Your name as you submitted it"
+            />
+            <button
+              onClick={handleManualNameContinue}
+              disabled={isEditLoading || isDeleteLoading}
+              className="rounded-md bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              Continue
+            </button>
+            <button
+              onClick={() => {
+                setPendingAction(null);
+                setManualName("");
+              }}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {actionError && (
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {editError}
+          {actionError}
         </div>
       )}
 
