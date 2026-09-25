@@ -8,8 +8,6 @@ function describe(value: string | undefined) {
     hasLeadingWhitespace: /^\s/.test(value),
     hasTrailingWhitespace: /\s$/.test(value),
     hasInternalWhitespace: /\s/.test(value.trim()),
-    first4: value.slice(0, 4),
-    last4: value.slice(-4),
   };
 }
 
