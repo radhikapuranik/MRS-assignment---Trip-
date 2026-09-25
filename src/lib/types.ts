@@ -17,6 +17,7 @@ export interface Preference {
   destination_types: string[];
   dealbreakers: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export type Verdict = "good fit" | "partial fit" | "poor fit";

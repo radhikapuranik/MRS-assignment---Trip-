@@ -28,19 +28,23 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("preferences")
-      .insert({
-        name,
-        budget: body.budget,
-        date_start: body.dateStart,
-        date_end: body.dateEnd,
-        destination_types: body.destinationTypes,
-        dealbreakers,
-      })
+      .upsert(
+        {
+          name,
+          budget: body.budget,
+          date_start: body.dateStart,
+          date_end: body.dateEnd,
+          destination_types: body.destinationTypes,
+          dealbreakers,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "name" }
+      )
       .select("id")
       .single();
 
     if (error) {
-      console.error("Supabase insert error:", error);
+      console.error("Supabase upsert error:", error);
       return NextResponse.json(
         { error: "Could not save your response right now. Please try again." },
         { status: 500 }

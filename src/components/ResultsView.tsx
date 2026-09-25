@@ -16,7 +16,13 @@ const VERDICT_STYLES: Record<Verdict, string> = {
   "poor fit": "bg-red-100 text-red-800",
 };
 
-export default function ResultsView() {
+interface Props {
+  onEditRequested: () => void;
+  isEditLoading?: boolean;
+  editError?: string | null;
+}
+
+export default function ResultsView({ onEditRequested, isEditLoading, editError }: Props) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showQr, setShowQr] = useState(true);
@@ -93,14 +99,29 @@ export default function ResultsView() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => load(true)}
-          disabled={isRefreshing || state.kind === "loading"}
-          className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <button
+            onClick={() => load(true)}
+            disabled={isRefreshing || state.kind === "loading"}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
+          </button>
+          <button
+            onClick={onEditRequested}
+            disabled={isEditLoading}
+            className="text-sm font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-black disabled:opacity-50"
+          >
+            {isEditLoading ? "Loading your response..." : "Edit my response"}
+          </button>
+        </div>
       </div>
+
+      {editError && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          {editError}
+        </div>
+      )}
 
       {showQr && pageUrl && (
         <div className="flex items-center gap-4 rounded-md border border-gray-200 bg-gray-50 px-4 py-3">

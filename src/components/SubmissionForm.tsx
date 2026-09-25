@@ -5,18 +5,34 @@ import { DESTINATION_TYPES } from "@/lib/types";
 import { validateSubmitPayload, hasErrors, FieldErrors, SubmitPayload } from "@/lib/validation";
 
 const HAS_SUBMITTED_KEY = "hasSubmitted";
+const SUBMITTER_NAME_KEY = "submitterName";
+
+export interface PrefillValues {
+  name: string;
+  budget: number;
+  dateStart: string;
+  dateEnd: string;
+  destinationTypes: string[];
+  dealbreakers: string;
+}
 
 interface Props {
   onSubmitted: () => void;
+  initialValues?: PrefillValues;
 }
 
-export default function SubmissionForm({ onSubmitted }: Props) {
-  const [name, setName] = useState("");
-  const [budget, setBudget] = useState("");
-  const [dateStart, setDateStart] = useState("");
-  const [dateEnd, setDateEnd] = useState("");
-  const [destinationTypes, setDestinationTypes] = useState<string[]>([]);
-  const [dealbreakers, setDealbreakers] = useState("");
+export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
+  const isEditMode = !!initialValues;
+  const [name, setName] = useState(initialValues?.name ?? "");
+  const [budget, setBudget] = useState(
+    initialValues ? String(initialValues.budget) : ""
+  );
+  const [dateStart, setDateStart] = useState(initialValues?.dateStart ?? "");
+  const [dateEnd, setDateEnd] = useState(initialValues?.dateEnd ?? "");
+  const [destinationTypes, setDestinationTypes] = useState<string[]>(
+    initialValues?.destinationTypes ?? []
+  );
+  const [dealbreakers, setDealbreakers] = useState(initialValues?.dealbreakers ?? "");
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -71,6 +87,7 @@ export default function SubmissionForm({ onSubmitted }: Props) {
 
       try {
         localStorage.setItem(HAS_SUBMITTED_KEY, "true");
+        localStorage.setItem(SUBMITTER_NAME_KEY, name.trim());
       } catch {
         // localStorage unavailable; not fatal, results will just not persist across reloads
       }
@@ -85,10 +102,13 @@ export default function SubmissionForm({ onSubmitted }: Props) {
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full max-w-lg flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Where should we go?</h1>
+        <h1 className="text-2xl font-semibold">
+          {isEditMode ? "Update your answers" : "Where should we go?"}
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Fill this out once. Once two or more of you have responded, we&apos;ll turn your
-          answers into real destination options.
+          {isEditMode
+            ? "Change anything below and resubmit — this replaces your previous response."
+            : "Fill this out once. Once two or more of you have responded, we'll turn your answers into real destination options."}
         </p>
       </div>
 
@@ -102,10 +122,16 @@ export default function SubmissionForm({ onSubmitted }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={50}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          disabled={isEditMode}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:text-gray-500"
           aria-invalid={!!fieldErrors.name}
           aria-describedby={fieldErrors.name ? "name-error" : undefined}
         />
+        {isEditMode && (
+          <p className="text-xs text-gray-400">
+            Name can&apos;t be changed here — it&apos;s how we match this back to your response.
+          </p>
+        )}
         {fieldErrors.name && (
           <p id="name-error" className="text-sm text-red-600">
             {fieldErrors.name}
@@ -230,7 +256,11 @@ export default function SubmissionForm({ onSubmitted }: Props) {
         disabled={isSubmitting}
         className="rounded-md bg-black text-white px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? "Submitting..." : "Submit my preferences"}
+        {isSubmitting
+          ? "Saving..."
+          : isEditMode
+            ? "Save changes"
+            : "Submit my preferences"}
       </button>
     </form>
   );
