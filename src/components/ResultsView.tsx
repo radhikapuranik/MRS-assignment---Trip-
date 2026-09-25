@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { RecommendResponse, RecommendationOption, Verdict } from "@/lib/types";
 
 type LoadState =
@@ -18,6 +19,13 @@ const VERDICT_STYLES: Record<Verdict, string> = {
 export default function ResultsView() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showQr, setShowQr] = useState(true);
+  const [pageUrl, setPageUrl] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window.location is only available client-side
+    setPageUrl(window.location.href);
+  }, []);
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
@@ -93,6 +101,22 @@ export default function ResultsView() {
           {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
         </button>
       </div>
+
+      {showQr && pageUrl && (
+        <div className="flex items-center gap-4 rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+          <QRCodeSVG value={pageUrl} size={128} className="shrink-0" />
+          <div className="flex-1 text-sm text-gray-600">
+            Ask your friends to scan this to add their own preferences.
+          </div>
+          <button
+            onClick={() => setShowQr(false)}
+            aria-label="Dismiss QR code"
+            className="shrink-0 self-start text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {state.kind === "loading" && (
         <div className="rounded-md border border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
