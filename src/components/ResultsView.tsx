@@ -41,8 +41,9 @@ export default function ResultsView({
   const [manualName, setManualName] = useState("");
 
   useEffect(() => {
+    const canonicalUrl = process.env.NEXT_PUBLIC_SITE_URL;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- window.location is only available client-side
-    setPageUrl(window.location.href);
+    setPageUrl(canonicalUrl || window.location.href);
   }, []);
 
   const load = useCallback(async (isManualRefresh = false) => {
