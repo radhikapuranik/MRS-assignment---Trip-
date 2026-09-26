@@ -50,7 +50,6 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
   const [dealbreakers, setDealbreakers] = useState(initialValues?.dealbreakers ?? "");
 
   // --- New fields below are UI-only for now (not yet sent to the backend). ---
-  const [numTravelers, setNumTravelers] = useState(1);
   const [tripPace, setTripPace] = useState<(typeof TRIP_PACE_OPTIONS)[number] | null>(null);
   const [travelingWith, setTravelingWith] = useState<
     (typeof TRAVELING_WITH_OPTIONS)[number] | null
@@ -308,23 +307,14 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
           )}
         </fieldset>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Stepper
-            label="Number of travelers"
-            value={numTravelers}
-            min={1}
-            max={20}
-            onChange={(v) => setNumTravelers(v ?? 1)}
-          />
-          <Stepper
-            label="Preferred trip length (days)"
-            optional
-            value={preferredTripLength}
-            min={1}
-            max={30}
-            onChange={setPreferredTripLength}
-          />
-        </div>
+        <Stepper
+          label="Preferred trip length (days)"
+          optional
+          value={preferredTripLength}
+          min={1}
+          max={30}
+          onChange={setPreferredTripLength}
+        />
 
         <ChipGroup
           label="Trip pace"

@@ -62,6 +62,11 @@ export interface RecommendationResult {
   options: RecommendationOption[];
 }
 
+export interface Respondent {
+  name: string;
+  updatedAt: string;
+}
+
 export type RecommendResponse =
-  | { status: "waiting"; responseCount: number }
-  | ({ status: "ready"; responseCount: number } & RecommendationResult);
+  | { status: "waiting"; responseCount: number; respondents: Respondent[] }
+  | ({ status: "ready"; responseCount: number; respondents: Respondent[] } & RecommendationResult);

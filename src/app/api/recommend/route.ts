@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateRecommendation } from "@/lib/gemini";
-import type { Preference } from "@/lib/types";
+import type { Preference, Respondent } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = getSupabaseAdmin();
 
-  let preferences: Preference[];
+  let allPreferences: Preference[];
   try {
     const { data, error } = await supabase
       .from("preferences")
@@ -17,7 +17,7 @@ export async function GET() {
       .order("created_at", { ascending: true });
 
     if (error) throw error;
-    preferences = (data ?? []) as Preference[];
+    allPreferences = (data ?? []) as Preference[];
   } catch (err) {
     console.error("Error loading preferences:", err);
     return NextResponse.json(
@@ -26,10 +26,50 @@ export async function GET() {
     );
   }
 
+  const respondents: Respondent[] = allPreferences.map((p) => ({
+    name: p.name,
+    updatedAt: p.updated_at,
+  }));
+
+  const namesParam = req.nextUrl.searchParams.get("names");
+  const isFiltered = namesParam !== null;
+  const requestedNames = isFiltered
+    ? new Set(
+        namesParam
+          .split(",")
+          .map((n) => n.trim())
+          .filter(Boolean)
+      )
+    : null;
+
+  const preferences = requestedNames
+    ? allPreferences.filter((p) => requestedNames.has(p.name))
+    : allPreferences;
+
   const count = preferences.length;
 
   if (count < 2) {
-    return NextResponse.json({ status: "waiting", responseCount: count });
+    return NextResponse.json({ status: "waiting", responseCount: count, respondents });
+  }
+
+  // A filtered (per-viewer, ephemeral) subset never reads from or writes to the
+  // shared cache — that cache is reserved for the canonical full-group result.
+  if (isFiltered) {
+    try {
+      const recommendation = await generateRecommendation(preferences);
+      return NextResponse.json({
+        status: "ready",
+        responseCount: count,
+        respondents,
+        options: recommendation.options,
+      });
+    } catch (err) {
+      console.error("Error generating filtered recommendation:", err);
+      return NextResponse.json(
+        { error: "We couldn't generate recommendations right now — try refreshing." },
+        { status: 500 }
+      );
+    }
   }
 
   const latestResponseAt = preferences.reduce(
@@ -55,6 +95,7 @@ export async function GET() {
       return NextResponse.json({
         status: "ready",
         responseCount: count,
+        respondents,
         options: cached.recommendation_json.options,
       });
     }
@@ -78,6 +119,7 @@ export async function GET() {
     return NextResponse.json({
       status: "ready",
       responseCount: count,
+      respondents,
       options: recommendation.options,
     });
   } catch (err) {

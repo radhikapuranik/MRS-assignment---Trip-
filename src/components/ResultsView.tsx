@@ -1,21 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import TripImage from "./TripImage";
-import type { RecommendResponse, RecommendationOption, Verdict } from "@/lib/types";
+import type {
+  RecommendResponse,
+  RecommendationOption,
+  Respondent,
+  Verdict,
+} from "@/lib/types";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "waiting"; responseCount: number }
   | { kind: "ready"; responseCount: number; options: RecommendationOption[] }
+  | { kind: "empty-selection" }
   | { kind: "error"; message: string };
+
+const GENERIC_ERROR = "We couldn't generate recommendations right now — try refreshing.";
 
 const VERDICT_STYLES: Record<Verdict, string> = {
   "good fit": "bg-primary-light text-primary",
   "partial fit": "bg-accent/15 text-accent",
   "poor fit": "bg-red-100 text-red-700",
 };
+
+function namesKey(names: string[]): string {
+  return [...names].sort().join("|");
+}
 
 interface Props {
   storedName: string | null;
@@ -41,63 +53,121 @@ export default function ResultsView({
   const [pendingAction, setPendingAction] = useState<"edit" | "delete" | null>(null);
   const [manualName, setManualName] = useState("");
 
+  const [respondents, setRespondents] = useState<Respondent[]>([]);
+  const [hiddenNames, setHiddenNames] = useState<Set<string>>(new Set());
+  const [appliedKey, setAppliedKey] = useState<string | null>(null);
+  const cacheRef = useRef<Map<string, RecommendationOption[]>>(new Map());
+
   useEffect(() => {
     const canonicalUrl = process.env.NEXT_PUBLIC_SITE_URL;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- window.location is only available client-side
     setPageUrl(canonicalUrl || window.location.href);
   }, []);
 
-  const load = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setState({ kind: "loading" });
-    }
-
-    try {
-      const res = await fetch("/api/recommend", { cache: "no-store" });
-      const data: RecommendResponse & { error?: string } = await res.json().catch(() => ({
-        error: "malformed response",
-      }));
-
-      if (!res.ok || !data || typeof data.status !== "string") {
-        setState({
-          kind: "error",
-          message:
-            data?.error ||
-            "We couldn't generate recommendations right now — try refreshing.",
-        });
-        return;
-      }
-
-      if (data.status === "waiting") {
-        setState({ kind: "waiting", responseCount: data.responseCount });
-      } else if (data.status === "ready" && Array.isArray(data.options)) {
-        setState({
-          kind: "ready",
-          responseCount: data.responseCount,
-          options: data.options,
-        });
+  const fetchRecommendation = useCallback(
+    async (namesFilter: string[] | null, isManualRefresh = false) => {
+      if (isManualRefresh) {
+        setIsRefreshing(true);
       } else {
-        setState({
-          kind: "error",
-          message: "We couldn't generate recommendations right now — try refreshing.",
-        });
+        setState({ kind: "loading" });
       }
-    } catch {
-      setState({
-        kind: "error",
-        message: "We couldn't generate recommendations right now — try refreshing.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+
+      try {
+        const url = namesFilter
+          ? `/api/recommend?names=${encodeURIComponent(namesFilter.join(","))}`
+          : "/api/recommend";
+        const res = await fetch(url, { cache: "no-store" });
+        const data: RecommendResponse & { error?: string } = await res.json().catch(() => ({
+          error: "malformed response",
+        }));
+
+        if (!res.ok || !data || typeof data.status !== "string") {
+          setState({ kind: "error", message: data?.error || GENERIC_ERROR });
+          return;
+        }
+
+        const freshRespondents = data.respondents ?? [];
+        setRespondents(freshRespondents);
+
+        if (data.status === "waiting") {
+          setState({ kind: "waiting", responseCount: data.responseCount });
+          setAppliedKey(null);
+        } else if (data.status === "ready" && Array.isArray(data.options)) {
+          const key = namesFilter
+            ? namesKey(namesFilter)
+            : namesKey(freshRespondents.map((r) => r.name));
+          cacheRef.current.set(key, data.options);
+          setState({ kind: "ready", responseCount: data.responseCount, options: data.options });
+          setAppliedKey(key);
+        } else {
+          setState({ kind: "error", message: GENERIC_ERROR });
+        }
+      } catch {
+        setState({ kind: "error", message: GENERIC_ERROR });
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount
-    load();
-  }, [load]);
+    fetchRecommendation(null);
+  }, [fetchRecommendation]);
+
+  function handleManualRefresh() {
+    cacheRef.current.clear();
+    setHiddenNames(new Set());
+    fetchRecommendation(null, true);
+  }
+
+  function toggleHidden(name: string) {
+    setHiddenNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  }
+
+  const allNames = respondents.map((r) => r.name);
+  const visibleNames = allNames.filter((n) => !hiddenNames.has(n));
+  const visibleKey = namesKey(visibleNames);
+  const hasPendingChange = appliedKey !== null && visibleKey !== appliedKey;
+
+  function handleRecalculate() {
+    if (visibleNames.length === 0) {
+      setState({ kind: "empty-selection" });
+      setAppliedKey("__empty__");
+      return;
+    }
+
+    const cached = cacheRef.current.get(visibleKey);
+    if (cached) {
+      setState({ kind: "ready", responseCount: visibleNames.length, options: cached });
+      setAppliedKey(visibleKey);
+      return;
+    }
+
+    const isFullSet = visibleNames.length === allNames.length;
+    fetchRecommendation(isFullSet ? null : visibleNames);
+  }
+
+  function handleShowEveryone() {
+    setHiddenNames(new Set());
+    const fullKey = namesKey(allNames);
+    const cached = cacheRef.current.get(fullKey);
+    if (cached) {
+      setState({ kind: "ready", responseCount: allNames.length, options: cached });
+      setAppliedKey(fullKey);
+    } else {
+      fetchRecommendation(null);
+    }
+  }
 
   function handleEditClick() {
     if (storedName) {
@@ -134,6 +204,7 @@ export default function ResultsView({
 
   const responseCount =
     state.kind === "waiting" || state.kind === "ready" ? state.responseCount : null;
+  const isBusy = state.kind === "loading" || isRefreshing;
 
   return (
     <div className="w-full max-w-4xl flex flex-col gap-6">
@@ -150,8 +221,8 @@ export default function ResultsView({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <button
-            onClick={() => load(true)}
-            disabled={isRefreshing || state.kind === "loading"}
+            onClick={handleManualRefresh}
+            disabled={isBusy}
             className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
           >
             {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
@@ -216,6 +287,67 @@ export default function ResultsView({
         </div>
       )}
 
+      {respondents.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-md border border-border bg-card px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {respondents.length} {respondents.length === 1 ? "person has" : "people have"}{" "}
+              filled this out
+            </p>
+            {hiddenNames.size > 0 && (
+              <button
+                onClick={handleShowEveryone}
+                disabled={isBusy}
+                className="text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:text-[#1a6b5c] disabled:opacity-50"
+              >
+                Reset — show everyone
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {respondents.map((r) => {
+              const isHidden = hiddenNames.has(r.name);
+              return (
+                <label
+                  key={r.name}
+                  className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
+                    isHidden
+                      ? "border-border/60 bg-foreground/5 text-foreground/40"
+                      : "border-primary/40 bg-primary-light text-primary"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!isHidden}
+                    onChange={() => toggleHidden(r.name)}
+                    className="h-3.5 w-3.5"
+                  />
+                  {r.name}
+                </label>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-foreground/50">
+            These toggles are just for you — hiding someone here doesn&apos;t affect what anyone
+            else sees. Toggle who to include, then recalculate to see a suggestion based only on
+            the people still shown.
+          </p>
+
+          {hasPendingChange && (
+            <button
+              onClick={handleRecalculate}
+              disabled={isBusy}
+              className="w-fit rounded-md bg-accent px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Recalculate for {visibleNames.length} shown{" "}
+              {visibleNames.length === 1 ? "response" : "responses"}
+            </button>
+          )}
+        </div>
+      )}
+
       {showQr && pageUrl && (
         <div className="flex items-center gap-4 rounded-md border border-border bg-card px-4 py-3">
           <QRCodeSVG value={pageUrl} size={112} className="shrink-0" />
@@ -241,6 +373,13 @@ export default function ResultsView({
       {state.kind === "waiting" && (
         <div className="rounded-md border border-border px-4 py-8 text-center text-sm text-foreground/60">
           Waiting on more responses before we can suggest anything.
+        </div>
+      )}
+
+      {state.kind === "empty-selection" && (
+        <div className="rounded-md border border-border px-4 py-8 text-center text-sm text-foreground/60">
+          Everyone&apos;s hidden right now — toggle at least one person back on to see a
+          suggestion.
         </div>
       )}
 
