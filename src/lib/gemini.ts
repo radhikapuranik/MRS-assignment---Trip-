@@ -23,7 +23,7 @@ ${people}
 
 Suggest 2 to 3 destination options that best balance the group's budgets, overlapping availability, destination type preferences, and dealbreakers. For each option, evaluate every single person listed above individually.
 
-For each option, also work out the group's realistic overlapping availability window for that destination and pick a sensible trip length (typically 3 to 6 days) that fits inside it. Build a day-by-day itinerary for that many days, and suggest the 5 best places to visit and 2 to 3 neighborhoods/areas that would be sensible to stay in (not specific named hotels or bookings — just areas).
+For each option, also work out the group's realistic overlapping availability window for that destination and pick a sensible trip length (typically 3 to 6 days) that fits inside it. Build a day-by-day itinerary for that many days.
 
 Respond with STRICT JSON only, no markdown code fences, no extra commentary, matching exactly this shape:
 
@@ -38,18 +38,12 @@ Respond with STRICT JSON only, no markdown code fences, no extra commentary, mat
       "tripLengthDays": 4,
       "itinerary": [
         { "day": 1, "title": "short day title", "morning": "one sentence", "afternoon": "one sentence", "evening": "one sentence" }
-      ],
-      "topPlaces": [
-        { "name": "string", "description": "one or two sentences", "imageKeyword": "one or two lowercase words for an image search, e.g. 'landmark' or 'beach'" }
-      ],
-      "stayAreas": [
-        { "name": "string (a neighborhood or area name, not a hotel brand)", "description": "one or two sentences", "imageKeyword": "one or two lowercase words for an image search" }
       ]
     }
   ]
 }
 
-Every option's "perPerson" array must include exactly one entry for each of these ${preferences.length} people, in any order: ${preferences.map((p) => p.name).join(", ")}. The "verdict" field must be exactly one of "good fit", "partial fit", or "poor fit". "itinerary" must have exactly "tripLengthDays" entries, numbered 1..N in order. "topPlaces" must have exactly 5 entries. "stayAreas" must have 2 or 3 entries.`;
+Every option's "perPerson" array must include exactly one entry for each of these ${preferences.length} people, in any order: ${preferences.map((p) => p.name).join(", ")}. The "verdict" field must be exactly one of "good fit", "partial fit", or "poor fit". "itinerary" must have exactly "tripLengthDays" entries, numbered 1..N in order.`;
 }
 
 function extractJson(text: string): unknown {
@@ -87,12 +81,6 @@ function isValidItineraryDay(value: unknown): boolean {
   );
 }
 
-function isValidNamedImageEntry(value: unknown): boolean {
-  if (!value || typeof value !== "object") return false;
-  const e = value as Record<string, unknown>;
-  return isNonEmptyString(e.name) && isNonEmptyString(e.description) && isNonEmptyString(e.imageKeyword);
-}
-
 function isValidRecommendation(data: unknown): data is RecommendationResult {
   if (!data || typeof data !== "object") return false;
   const options = (data as { options?: unknown }).options;
@@ -116,12 +104,6 @@ function isValidRecommendation(data: unknown): data is RecommendationResult {
     if (typeof o.tripLengthDays !== "number" || o.tripLengthDays <= 0) return false;
     if (!Array.isArray(o.itinerary) || o.itinerary.length === 0) return false;
     if (!o.itinerary.every(isValidItineraryDay)) return false;
-
-    if (!Array.isArray(o.topPlaces) || o.topPlaces.length === 0) return false;
-    if (!o.topPlaces.every(isValidNamedImageEntry)) return false;
-
-    if (!Array.isArray(o.stayAreas) || o.stayAreas.length === 0) return false;
-    if (!o.stayAreas.every(isValidNamedImageEntry)) return false;
   }
 
   return true;

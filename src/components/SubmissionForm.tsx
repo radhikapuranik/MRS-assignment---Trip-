@@ -20,7 +20,6 @@ const DESTINATION_TYPE_META: Record<string, { label: string; emoji: string }> = 
 };
 
 const TRIP_PACE_OPTIONS = ["Relaxed", "Balanced", "Packed"] as const;
-const TRAVELING_WITH_OPTIONS = ["Solo", "Couple", "Friends", "Family"] as const;
 
 export interface PrefillValues {
   name: string;
@@ -51,9 +50,6 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
 
   // --- New fields below are UI-only for now (not yet sent to the backend). ---
   const [tripPace, setTripPace] = useState<(typeof TRIP_PACE_OPTIONS)[number] | null>(null);
-  const [travelingWith, setTravelingWith] = useState<
-    (typeof TRAVELING_WITH_OPTIONS)[number] | null
-  >(null);
   const [preferredTripLength, setPreferredTripLength] = useState<number | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -321,13 +317,6 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
           options={TRIP_PACE_OPTIONS}
           value={tripPace}
           onChange={setTripPace}
-        />
-
-        <ChipGroup
-          label="Who's traveling"
-          options={TRAVELING_WITH_OPTIONS}
-          value={travelingWith}
-          onChange={setTravelingWith}
         />
 
         <div className="flex flex-col gap-1">

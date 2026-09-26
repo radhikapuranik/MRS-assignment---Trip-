@@ -222,226 +222,235 @@ export default function ResultsView({
   const isBusy = state.kind === "loading" || isRefreshing;
 
   return (
-    <div className="w-full max-w-4xl flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">
-            Trip recommendations
-          </h1>
-          {responseCount !== null && (
-            <p className="mt-1 text-sm text-foreground/60">
-              {responseCount} of the group have responded so far
-            </p>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <button
-            onClick={handleManualRefresh}
-            disabled={isBusy}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-          >
-            {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
-          </button>
-          <div className="flex gap-3">
-            <button
-              onClick={handleEditClick}
-              disabled={isEditLoading || isDeleteLoading}
-              className="text-sm font-medium text-foreground/60 underline decoration-foreground/20 underline-offset-2 transition-colors hover:text-primary disabled:opacity-50"
-            >
-              {isEditLoading ? "Loading..." : "Edit my response"}
-            </button>
-            <button
-              onClick={handleDeleteClick}
-              disabled={isEditLoading || isDeleteLoading}
-              className="text-sm font-medium text-red-600 underline decoration-red-200 underline-offset-2 transition-colors hover:text-red-800 disabled:opacity-50"
-            >
-              {isDeleteLoading ? "Removing..." : "Delete my response"}
-            </button>
-          </div>
-        </div>
+    <div className="relative w-full max-w-4xl">
+      <div
+        aria-hidden
+        className="fixed inset-0 -z-10 bg-gradient-to-br from-primary via-[#173f38] to-[#0d211c]"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_45%),radial-gradient(circle_at_80%_70%,rgba(201,138,75,0.25),transparent_45%)]" />
       </div>
 
-      {pendingAction && (
-        <div className="flex flex-col gap-2 rounded-md border border-border bg-card px-4 py-3">
-          <label htmlFor="manual-name" className="text-sm font-medium">
-            Enter your name to find your response
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="manual-name"
-              type="text"
-              value={manualName}
-              onChange={(e) => setManualName(e.target.value)}
-              maxLength={50}
-              className="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Your name as you submitted it"
-            />
-            <button
-              onClick={handleManualNameContinue}
-              disabled={isEditLoading || isDeleteLoading}
-              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              Continue
-            </button>
-            <button
-              onClick={() => {
-                setPendingAction(null);
-                setManualName("");
-              }}
-              className="rounded-md border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary-light"
-            >
-              Cancel
-            </button>
+      <div className="flex w-full flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/25 bg-white/80 p-5 shadow-xl backdrop-blur-md sm:p-6">
+          <div>
+            <h1 className="font-serif text-3xl font-semibold text-foreground">
+              Trip recommendations
+            </h1>
+            {responseCount !== null && (
+              <p className="mt-1 text-sm text-foreground/60">
+                {responseCount} of the group have responded so far
+              </p>
+            )}
           </div>
-        </div>
-      )}
-
-      {notFoundName ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-primary-light px-4 py-3 text-sm text-primary">
-          <span>
-            {storedName && storedName.trim().toLowerCase() === notFoundName.trim().toLowerCase()
-              ? "You haven't submitted your preferences yet — fill out the form to get started."
-              : `No response found for "${notFoundName}" — they haven't submitted their preferences yet.`}
-          </span>
-          <button
-            onClick={onGoToForm}
-            className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            Go to submission form
-          </button>
-        </div>
-      ) : (
-        actionError && (
-          <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            {actionError}
-          </div>
-        )
-      )}
-
-      {respondents.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-md border border-border bg-card px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-foreground">
-              {respondents.length} {respondents.length === 1 ? "person has" : "people have"}{" "}
-              filled this out
-            </p>
-            {hiddenNames.size > 0 && (
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <button
+              onClick={handleManualRefresh}
+              disabled={isBusy}
+              className="rounded-md border border-border bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh recommendations"}
+            </button>
+            <div className="flex gap-3">
               <button
-                onClick={handleShowEveryone}
-                disabled={isBusy}
-                className="text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:text-[#1a6b5c] disabled:opacity-50"
+                onClick={handleEditClick}
+                disabled={isEditLoading || isDeleteLoading}
+                className="text-sm font-medium text-foreground/60 underline decoration-foreground/20 underline-offset-2 transition-colors hover:text-primary disabled:opacity-50"
               >
-                Reset — show everyone
+                {isEditLoading ? "Loading..." : "Edit my response"}
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                disabled={isEditLoading || isDeleteLoading}
+                className="text-sm font-medium text-red-600 underline decoration-red-200 underline-offset-2 transition-colors hover:text-red-800 disabled:opacity-50"
+              >
+                {isDeleteLoading ? "Removing..." : "Delete my response"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {pendingAction && (
+          <div className="flex flex-col gap-2 rounded-2xl border border-white/25 bg-white/80 p-4 shadow-xl backdrop-blur-md">
+            <label htmlFor="manual-name" className="text-sm font-medium">
+              Enter your name to find your response
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="manual-name"
+                type="text"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                maxLength={50}
+                className="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Your name as you submitted it"
+              />
+              <button
+                onClick={handleManualNameContinue}
+                disabled={isEditLoading || isDeleteLoading}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                Continue
+              </button>
+              <button
+                onClick={() => {
+                  setPendingAction(null);
+                  setManualName("");
+                }}
+                className="rounded-md border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary-light"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notFoundName ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/25 bg-primary-light/95 p-4 shadow-xl backdrop-blur-md text-sm text-primary">
+            <span>
+              {storedName && storedName.trim().toLowerCase() === notFoundName.trim().toLowerCase()
+                ? "You haven't submitted your preferences yet — fill out the form to get started."
+                : `No response found for "${notFoundName}" — they haven't submitted their preferences yet.`}
+            </span>
+            <button
+              onClick={onGoToForm}
+              className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              Go to submission form
+            </button>
+          </div>
+        ) : (
+          actionError && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-xl text-sm text-red-700">
+              {actionError}
+            </div>
+          )
+        )}
+
+        {respondents.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/25 bg-white/80 p-4 shadow-xl backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">
+                {respondents.length} {respondents.length === 1 ? "person has" : "people have"}{" "}
+                filled this out
+              </p>
+              {hiddenNames.size > 0 && (
+                <button
+                  onClick={handleShowEveryone}
+                  disabled={isBusy}
+                  className="text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:text-[#1a6b5c] disabled:opacity-50"
+                >
+                  Reset — show everyone
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {respondents.map((r) => {
+                const isHidden = hiddenNames.has(r.name);
+                return (
+                  <label
+                    key={r.name}
+                    className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
+                      isHidden
+                        ? "border-border/60 bg-foreground/5 text-foreground/40"
+                        : "border-primary/40 bg-primary-light text-primary"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!isHidden}
+                      onChange={() => toggleHidden(r.name)}
+                      className="h-3.5 w-3.5"
+                    />
+                    {r.name}
+                  </label>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-foreground/50">
+              These toggles are just for you — hiding someone here doesn&apos;t affect what anyone
+              else sees. Toggle who to include, then recalculate to see a suggestion based only on
+              the people still shown.
+            </p>
+
+            {hasPendingChange && (
+              <button
+                onClick={handleRecalculate}
+                disabled={isBusy}
+                className="w-fit rounded-md bg-accent px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                Recalculate for {visibleNames.length} shown{" "}
+                {visibleNames.length === 1 ? "response" : "responses"}
               </button>
             )}
           </div>
+        )}
 
-          <div className="flex flex-wrap gap-2">
-            {respondents.map((r) => {
-              const isHidden = hiddenNames.has(r.name);
-              return (
-                <label
-                  key={r.name}
-                  className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
-                    isHidden
-                      ? "border-border/60 bg-foreground/5 text-foreground/40"
-                      : "border-primary/40 bg-primary-light text-primary"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={!isHidden}
-                    onChange={() => toggleHidden(r.name)}
-                    className="h-3.5 w-3.5"
-                  />
-                  {r.name}
-                </label>
-              );
-            })}
-          </div>
-
-          <p className="text-xs text-foreground/50">
-            These toggles are just for you — hiding someone here doesn&apos;t affect what anyone
-            else sees. Toggle who to include, then recalculate to see a suggestion based only on
-            the people still shown.
-          </p>
-
-          {hasPendingChange && (
-            <button
-              onClick={handleRecalculate}
-              disabled={isBusy}
-              className="w-fit rounded-md bg-accent px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              Recalculate for {visibleNames.length} shown{" "}
-              {visibleNames.length === 1 ? "response" : "responses"}
-            </button>
-          )}
-        </div>
-      )}
-
-      {showQr && pageUrl && (
-        <div className="flex items-start gap-4 rounded-md border border-border bg-card px-4 py-3">
-          <QRCodeSVG value={pageUrl} size={112} className="shrink-0" />
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="text-sm text-foreground/60">
-              Ask your friends to scan this to add their own preferences.
+        {showQr && pageUrl && (
+          <div className="flex items-start gap-4 rounded-2xl border border-white/25 bg-white/80 p-4 shadow-xl backdrop-blur-md">
+            <QRCodeSVG value={pageUrl} size={112} className="shrink-0" />
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="text-sm text-foreground/60">
+                Ask your friends to scan this to add their own preferences.
+              </div>
+              <button
+                onClick={handleCopyLink}
+                className="w-fit rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-primary hover:text-primary"
+              >
+                {copied ? "Copied!" : "Copy link"}
+              </button>
             </div>
             <button
-              onClick={handleCopyLink}
-              className="w-fit rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-primary hover:text-primary"
+              onClick={() => setShowQr(false)}
+              aria-label="Dismiss QR code"
+              className="shrink-0 text-foreground/30 transition-colors hover:text-foreground/60"
             >
-              {copied ? "Copied!" : "Copy link"}
+              ✕
             </button>
           </div>
-          <button
-            onClick={() => setShowQr(false)}
-            aria-label="Dismiss QR code"
-            className="shrink-0 text-foreground/30 transition-colors hover:text-foreground/60"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+        )}
 
-      {state.kind === "loading" && (
-        <div className="rounded-md border border-border px-4 py-8 text-center text-sm text-foreground/60">
-          Loading recommendations...
-        </div>
-      )}
+        {state.kind === "loading" && (
+          <div className="rounded-2xl border border-white/25 bg-white/80 p-8 text-center text-sm text-foreground/60 shadow-xl backdrop-blur-md">
+            Loading recommendations...
+          </div>
+        )}
 
-      {state.kind === "waiting" && (
-        <div className="rounded-md border border-border px-4 py-8 text-center text-sm text-foreground/60">
-          Waiting on more responses before we can suggest anything.
-        </div>
-      )}
+        {state.kind === "waiting" && (
+          <div className="rounded-2xl border border-white/25 bg-white/80 p-8 text-center text-sm text-foreground/60 shadow-xl backdrop-blur-md">
+            Waiting on more responses before we can suggest anything.
+          </div>
+        )}
 
-      {state.kind === "empty-selection" && (
-        <div className="rounded-md border border-border px-4 py-8 text-center text-sm text-foreground/60">
-          Everyone&apos;s hidden right now — toggle at least one person back on to see a
-          suggestion.
-        </div>
-      )}
+        {state.kind === "empty-selection" && (
+          <div className="rounded-2xl border border-white/25 bg-white/80 p-8 text-center text-sm text-foreground/60 shadow-xl backdrop-blur-md">
+            Everyone&apos;s hidden right now — toggle at least one person back on to see a
+            suggestion.
+          </div>
+        )}
 
-      {state.kind === "error" && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700">
-          {state.message}
-        </div>
-      )}
+        {state.kind === "error" && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-xl">
+            {state.message}
+          </div>
+        )}
 
-      {state.kind === "ready" && (
-        <div className="flex flex-col gap-10">
-          {state.options.map((option, i) => (
-            <OptionCard key={i} option={option} />
-          ))}
-        </div>
-      )}
+        {state.kind === "ready" && (
+          <div className="flex flex-col gap-10">
+            {state.options.map((option, i) => (
+              <OptionCard key={i} option={option} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function OptionCard({ option }: { option: RecommendationOption }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-white/25 bg-white/80 shadow-xl backdrop-blur-md">
       <div className="group relative h-56 w-full overflow-hidden sm:h-72">
         <TripImage
           keywords={[option.destination, "travel"]}
@@ -509,60 +518,6 @@ function OptionCard({ option }: { option: RecommendationOption }) {
                       <dd>{day.evening}</dd>
                     </div>
                   </dl>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {option.topPlaces?.length > 0 && (
-          <section>
-            <h3 className="font-serif text-lg font-semibold text-foreground">
-              Top places to visit
-            </h3>
-            <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {option.topPlaces.map((place, k) => (
-                <div
-                  key={k}
-                  className="group overflow-hidden rounded-lg border border-border transition-shadow hover:shadow-md"
-                >
-                  <div className="h-28 w-full overflow-hidden">
-                    <TripImage
-                      keywords={[option.destination, place.imageKeyword]}
-                      alt={place.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <div className="text-sm font-medium text-foreground">{place.name}</div>
-                    <p className="mt-1 text-xs text-foreground/60">{place.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {option.stayAreas?.length > 0 && (
-          <section>
-            <h3 className="font-serif text-lg font-semibold text-foreground">Where to stay</h3>
-            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {option.stayAreas.map((area, k) => (
-                <div
-                  key={k}
-                  className="group overflow-hidden rounded-lg border border-border transition-shadow hover:shadow-md"
-                >
-                  <div className="h-28 w-full overflow-hidden">
-                    <TripImage
-                      keywords={[option.destination, area.imageKeyword]}
-                      alt={area.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <div className="text-sm font-medium text-foreground">{area.name}</div>
-                    <p className="mt-1 text-xs text-foreground/60">{area.description}</p>
-                  </div>
                 </div>
               ))}
             </div>
