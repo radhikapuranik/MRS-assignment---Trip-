@@ -100,12 +100,12 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="w-full max-w-lg flex flex-col gap-6">
+    <form onSubmit={handleSubmit} noValidate className="w-full max-w-lg flex flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="font-serif text-3xl font-semibold text-foreground">
           {isEditMode ? "Update your answers" : "Where should we go?"}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-foreground/60">
           {isEditMode
             ? "Change anything below and resubmit — this replaces your previous response."
             : "Fill this out once. Once two or more of you have responded, we'll turn your answers into real destination options."}
@@ -123,12 +123,12 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
           onChange={(e) => setName(e.target.value)}
           maxLength={50}
           disabled={isEditMode}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:text-gray-500"
+          className="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:text-foreground/60"
           aria-invalid={!!fieldErrors.name}
           aria-describedby={fieldErrors.name ? "name-error" : undefined}
         />
         {isEditMode && (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-foreground/40">
             Name can&apos;t be changed here — it&apos;s how we match this back to your response.
           </p>
         )}
@@ -151,7 +151,7 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
           step={1}
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          className="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-invalid={!!fieldErrors.budget}
           aria-describedby={fieldErrors.budget ? "budget-error" : undefined}
         />
@@ -172,7 +172,7 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
             type="date"
             value={dateStart}
             onChange={(e) => setDateStart(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             aria-invalid={!!fieldErrors.dateStart}
             aria-describedby={fieldErrors.dateStart ? "date-start-error" : undefined}
           />
@@ -192,7 +192,7 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
             type="date"
             value={dateEnd}
             onChange={(e) => setDateEnd(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             aria-invalid={!!fieldErrors.dateEnd}
             aria-describedby={fieldErrors.dateEnd ? "date-end-error" : undefined}
           />
@@ -227,7 +227,7 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
       <div className="flex flex-col gap-1">
         <label htmlFor="dealbreakers" className="text-sm font-medium">
           Dealbreakers / what you won&apos;t do{" "}
-          <span className="font-normal text-gray-400">(optional)</span>
+          <span className="font-normal text-foreground/40">(optional)</span>
         </label>
         <textarea
           id="dealbreakers"
@@ -235,11 +235,11 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
           onChange={(e) => setDealbreakers(e.target.value)}
           maxLength={300}
           rows={3}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          className="rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-invalid={!!fieldErrors.dealbreakers}
           aria-describedby={fieldErrors.dealbreakers ? "dealbreakers-error" : undefined}
         />
-        <div className="flex justify-between text-xs text-gray-400">
+        <div className="flex justify-between text-xs text-foreground/40">
           <span>{fieldErrors.dealbreakers && <span className="text-red-600 text-sm">{fieldErrors.dealbreakers}</span>}</span>
           <span>{dealbreakers.length}/300</span>
         </div>
@@ -254,7 +254,7 @@ export default function SubmissionForm({ onSubmitted, initialValues }: Props) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-md bg-black text-white px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className="rounded-md bg-primary text-white px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting
           ? "Saving..."

@@ -28,10 +28,34 @@ export interface RecommendationPerPerson {
   reason: string;
 }
 
+export interface ItineraryDay {
+  day: number;
+  title: string;
+  morning: string;
+  afternoon: string;
+  evening: string;
+}
+
+export interface PlaceToVisit {
+  name: string;
+  description: string;
+  imageKeyword: string;
+}
+
+export interface StayArea {
+  name: string;
+  description: string;
+  imageKeyword: string;
+}
+
 export interface RecommendationOption {
   destination: string;
   pitch: string;
   perPerson: RecommendationPerPerson[];
+  tripLengthDays: number;
+  itinerary: ItineraryDay[];
+  topPlaces: PlaceToVisit[];
+  stayAreas: StayArea[];
 }
 
 export interface RecommendationResult {

@@ -4,6 +4,7 @@ import { generateRecommendation } from "@/lib/gemini";
 import type { Preference } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET() {
   const supabase = getSupabaseAdmin();
