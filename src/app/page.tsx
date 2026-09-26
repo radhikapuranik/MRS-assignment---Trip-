@@ -14,6 +14,7 @@ export default function Home() {
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [notFoundName, setNotFoundName] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
@@ -33,12 +34,18 @@ export default function Home() {
 
   async function handleEditRequested(name: string) {
     setActionError(null);
+    setNotFoundName(null);
     setIsEditLoading(true);
     try {
       const res = await fetch(`/api/preference?name=${encodeURIComponent(name)}`, {
         cache: "no-store",
       });
       const data = await res.json().catch(() => ({}));
+
+      if (res.status === 404) {
+        setNotFoundName(name);
+        return;
+      }
 
       if (!res.ok || !data?.preference) {
         setActionError(
@@ -66,12 +73,18 @@ export default function Home() {
 
   async function handleDeleteRequested(name: string) {
     setActionError(null);
+    setNotFoundName(null);
     setIsDeleteLoading(true);
     try {
       const res = await fetch(`/api/preference?name=${encodeURIComponent(name)}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
+
+      if (res.status === 404) {
+        setNotFoundName(name);
+        return;
+      }
 
       if (!res.ok) {
         setActionError(
@@ -103,6 +116,13 @@ export default function Home() {
     }
   }
 
+  function handleGoToForm() {
+    setNotFoundName(null);
+    setActionError(null);
+    setPrefillValues(undefined);
+    setView("form");
+  }
+
   function handleSubmitted() {
     setPrefillValues(undefined);
     let name: string | null = null;
@@ -129,6 +149,8 @@ export default function Home() {
           isEditLoading={isEditLoading}
           isDeleteLoading={isDeleteLoading}
           actionError={actionError}
+          notFoundName={notFoundName}
+          onGoToForm={handleGoToForm}
           key={`results-${refreshToken}`}
         />
       )}

@@ -36,6 +36,8 @@ interface Props {
   isEditLoading?: boolean;
   isDeleteLoading?: boolean;
   actionError?: string | null;
+  notFoundName?: string | null;
+  onGoToForm: () => void;
 }
 
 export default function ResultsView({
@@ -45,6 +47,8 @@ export default function ResultsView({
   isEditLoading,
   isDeleteLoading,
   actionError,
+  notFoundName,
+  onGoToForm,
 }: Props) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,6 +56,7 @@ export default function ResultsView({
   const [pageUrl, setPageUrl] = useState("");
   const [pendingAction, setPendingAction] = useState<"edit" | "delete" | null>(null);
   const [manualName, setManualName] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const [respondents, setRespondents] = useState<Respondent[]>([]);
   const [hiddenNames, setHiddenNames] = useState<Set<string>>(new Set());
@@ -115,6 +120,16 @@ export default function ResultsView({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount
     fetchRecommendation(null);
   }, [fetchRecommendation]);
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable or denied; not worth surfacing an error for this
+    }
+  }
 
   function handleManualRefresh() {
     cacheRef.current.clear();
@@ -281,10 +296,26 @@ export default function ResultsView({
         </div>
       )}
 
-      {actionError && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {actionError}
+      {notFoundName ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-primary-light px-4 py-3 text-sm text-primary">
+          <span>
+            {storedName && storedName.trim().toLowerCase() === notFoundName.trim().toLowerCase()
+              ? "You haven't submitted your preferences yet — fill out the form to get started."
+              : `No response found for "${notFoundName}" — they haven't submitted their preferences yet.`}
+          </span>
+          <button
+            onClick={onGoToForm}
+            className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            Go to submission form
+          </button>
         </div>
+      ) : (
+        actionError && (
+          <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </div>
+        )
       )}
 
       {respondents.length > 0 && (
@@ -349,15 +380,23 @@ export default function ResultsView({
       )}
 
       {showQr && pageUrl && (
-        <div className="flex items-center gap-4 rounded-md border border-border bg-card px-4 py-3">
+        <div className="flex items-start gap-4 rounded-md border border-border bg-card px-4 py-3">
           <QRCodeSVG value={pageUrl} size={112} className="shrink-0" />
-          <div className="flex-1 text-sm text-foreground/60">
-            Ask your friends to scan this to add their own preferences.
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="text-sm text-foreground/60">
+              Ask your friends to scan this to add their own preferences.
+            </div>
+            <button
+              onClick={handleCopyLink}
+              className="w-fit rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:border-primary hover:text-primary"
+            >
+              {copied ? "Copied!" : "Copy link"}
+            </button>
           </div>
           <button
             onClick={() => setShowQr(false)}
             aria-label="Dismiss QR code"
-            className="shrink-0 self-start text-foreground/30 transition-colors hover:text-foreground/60"
+            className="shrink-0 text-foreground/30 transition-colors hover:text-foreground/60"
           >
             ✕
           </button>
